@@ -95,8 +95,9 @@ public class ImageLayer : Layer
 
         int screen_h = images.shape[1];
         int screen_w = images.shape[2];
+        print($"{images.shape[1]}, {images.shape[2]}");
 
-        float scale = prefab.transform.localScale.x;
+        float scale = 1;//prefab.transform.localScale.x;
 
         float h_offset = (scale * 2) + scale * screen_h;
         float w_offset = (scale * 2) + scale * screen_w;
@@ -111,6 +112,8 @@ public class ImageLayer : Layer
                 screen = new CubeScreen();
                 screen.apply_image(images[(int)(y * w + x)]);
                 screen.init_screen(origin + translation, prefab, screen_h, screen_w);
+
+                print(screen.triangle_count());
                 
 
 

@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using NumSharp;
+using diag = System.Diagnostics;
 public class CubeScreen {
 
 	public MeshRenderer meshRenderer;
@@ -68,9 +69,21 @@ public class CubeScreen {
 		bool BW = image.shape[2] == 1;
 
 		Color color = new Color(0f,0f,0f,1f);
+		bool[] faces = new bool[]{true, true, false, false, false, false};
 
-		for (int y = 0; y < ChunkHeight; y++) {
-			for (int x = 0; x < ChunkWidth; x++) {
+		for (int y = 0; y < image.shape[0]; y++) {
+			if (y==0)
+				faces[3] = true;
+			else
+				faces[3] = false;
+			
+			if (y==ChunkHeight - 1)
+				faces[2] = true;
+			else
+				faces[2] = false;
+
+			
+			for (int x = 0; x < image.shape[1]; x++) {
 				if (BW)
 				{   
 					color.r = image[y, x, 0];
@@ -84,7 +97,17 @@ public class CubeScreen {
 					color.b = image[y, x, 2];
 				}
 				
-				AddVoxelDataToChunk (new Vector3(x, y, 0), color);
+				if (x==0)
+					faces[4] = true;
+				else
+					faces[4] = false;
+				
+				if (x==ChunkWidth - 1)
+					faces[5] = true;
+				else
+					faces[5] = false;
+				
+				AddVoxelDataToChunk (new Vector3(x, y, 0), color, faces);
 			}
 		}
 
@@ -103,11 +126,11 @@ public class CubeScreen {
 
 	}
 
-	void AddVoxelDataToChunk (Vector3 pos, Color color) {
+	void AddVoxelDataToChunk (Vector3 pos, Color color, bool[] faces) {
 
 		for (int p = 0; p < 6; p++) { 
 
-			if (p == 1 || !CheckVoxel(pos + VoxelData.faceChecks[p])) {
+			if (faces[p]) {
 
                 //byte blockID = voxelMap[(int)pos.x, (int)pos.y, (int)pos.z];
 
@@ -131,6 +154,16 @@ public class CubeScreen {
 			}
 		}
 
+	}
+
+	public float triangle_count () 
+	{
+		int inner_cubes = (ChunkHeight - 2) * (ChunkWidth * 2);
+		int outer_cubes = (ChunkHeight - 2) * 2 + (ChunkWidth * 2) * 2;
+		int corner_cubes = 4;
+
+		
+		return (float)(inner_cubes * 2 + outer_cubes * 3 + corner_cubes * 4) / (vertices.Count / 4);
 	}
 
 	void CreateMesh () {
