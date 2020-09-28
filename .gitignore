@@ -71,3 +71,10 @@ crashlytics-build.properties
 /[Aa]ssets/[Ss]treamingAssets/aa/*
 
 .vscode/
+
+pythonVenv/
+
+*.json
+*.h5
+inputs/
+activations/
