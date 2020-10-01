@@ -72,9 +72,10 @@ crashlytics-build.properties
 
 .vscode/
 
-pythonVenv/
+env/
 
 *.json
 *.h5
 inputs/
 activations/
+Plugins/

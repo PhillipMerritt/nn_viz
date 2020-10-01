@@ -9,19 +9,24 @@ using NumSharp;
 
 public class ImageLayer : Layer
 {
-    public List<CubeScreen> screens = new List<CubeScreen>();
-
+    new public List<CubeScreen> screens;
     int image_count;
     // Start is called before the first frame update
     void Start()
     {
-        
+
     }
 
     // Update is called once per frame
     void Update()
     {
-        
+        if (Time.fixedTime % Settings.timing == 0)
+        {
+            foreach (CubeScreen screen in screens)
+            {
+                screen.nextColors();
+            }
+        }
     }
 
     // algorithm credit: https://github.com/philipperemy/keract/blob/228f9201d740f5fb2e2dee539d87a8441b482b17/keract/keract.py#L11
@@ -86,6 +91,26 @@ public class ImageLayer : Layer
         }
     }
 
+    public override void addColors(NDArray new_colors)
+    {
+        int idx = 0;
+        print("````````````");
+        print(h);
+        print(w);
+        foreach (int dim in new_colors.shape)
+            print(dim);
+        print("````````````");
+        for(float y=0f; y < h; y++)
+        {
+            for(float x=0f; x < w; x++)
+            {
+                screens[idx].addImage(new_colors[(int)(y * w + x)]);
+                print(screens[idx].checkColors());
+                idx++;
+            }
+        }
+    }
+
     public override void init_layer(Vector3 origin_in, GameObject prefab)
     {
         origin = origin_in;
@@ -95,7 +120,7 @@ public class ImageLayer : Layer
 
         int screen_h = images.shape[1];
         int screen_w = images.shape[2];
-        print($"{images.shape[1]}, {images.shape[2]}");
+        //print($"{images.shape[1]}, {images.shape[2]}");
 
         float scale = 1;//prefab.transform.localScale.x;
 
@@ -103,6 +128,7 @@ public class ImageLayer : Layer
         float w_offset = (scale * 2) + scale * screen_w;
 
         CubeScreen screen;
+        screens = new List<CubeScreen>();
         for(float y=0f; y < h; y++)
         {
             for(float x=0f; x < w; x++)
@@ -112,14 +138,14 @@ public class ImageLayer : Layer
                 screen = new CubeScreen();
                 screen.apply_image(images[(int)(y * w + x)]);
                 screen.init_screen(origin + translation, prefab, screen_h, screen_w);
-
-                print(screen.triangle_count());
-                
-
-
                 screens.Add(screen);
             }
         }
+    }
+
+    public override List<CubeScreen> GetScreens()
+    {
+        return screens;
     }
 
     public override void setLabels(List<string> new_labels, GameObject labelPrefab)
@@ -127,6 +153,15 @@ public class ImageLayer : Layer
         return;
     }
 
+    public void connect(ImageLayer layer)
+    {
+        screens[0].connect(layer.screens[0].getPoints());
+    }
+
+    public override List<Vector3> GetPoints()
+    {
+        throw new NotImplementedException();
+    }
     /*public List<Vector3> get_points()
     {
         List<Vector3> output = new List<Vector3>();

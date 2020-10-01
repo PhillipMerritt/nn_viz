@@ -5,6 +5,7 @@ using NumSharp;
 
 public abstract class Layer : MonoBehaviour
 {
+    public List<CubeScreen> screens = new List<CubeScreen>();
     public string layer_name;
     public Vector3 origin;
 
@@ -34,7 +35,12 @@ public abstract class Layer : MonoBehaviour
         w = images.shape[2];
     }
 
+    abstract public void addColors(NDArray new_colors);
     abstract public void init_layer(Vector3 origin_in, GameObject prefab);
 
     abstract public void setLabels(List<string> new_labels, GameObject labelPrefab);
+
+    abstract public List<CubeScreen> GetScreens();
+
+    abstract public List<Vector3> GetPoints();
 }

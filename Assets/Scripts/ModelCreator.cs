@@ -8,7 +8,7 @@ using Newtonsoft.Json;
 using NumSharp;
 public class ModelCreator : MonoBehaviour
 {
-    string json_path = "Assets/inputs/test.json";
+    string json_path = "Assets/Resources/activations/";
     List<Layer> layers = new List<Layer>();
 
     public Vector3 origin = new Vector3(0f, 3f, 0f);
@@ -98,7 +98,15 @@ public class ModelCreator : MonoBehaviour
 
     public void read_json()
     {
-        Dictionary<string, dynamic> dict = JsonConvert.DeserializeObject<Dictionary<string, dynamic>>(File.ReadAllText(json_path));
+        string[] filenames = Directory.GetFiles(json_path, "*", SearchOption.TopDirectoryOnly);
+        int fCount = 0;
+        foreach (string fn in filenames)
+            if (fn.EndsWith(".json"))
+                fCount++;
+        
+        print($"{fCount} inputs");
+
+        Dictionary<string, dynamic> dict = JsonConvert.DeserializeObject<Dictionary<string, dynamic>>(File.ReadAllText($"{json_path}activations0.json"));
 
         List<string> keys = new List<string>();
 
@@ -108,9 +116,6 @@ public class ModelCreator : MonoBehaviour
             layer_count++;
             keys.Add(k);
         }
-
-        keys.RemoveAt(keys.Count - 1);
-        layer_count--;
 
         int count;
         int height;
@@ -132,22 +137,35 @@ public class ModelCreator : MonoBehaviour
         float y_offset; float x_offset;
         int y_count; int x_count;
 
+        bool shape2d = Settings.shape.Count == 2;
+
+
         for (int i=0; i<layer_count - 1; i++)
         {
             if (dict[keys[i]][0][0].GetType() != typeof(JValue))
-            {
-                channels = dict[keys[i]][0][0][0].Count;
-                if (channels == 3)
+            {   
+                if (shape2d)
                 {
-                    x_count = 1; 
+                    //tile_dims = convert_1d_to_2d(channels);
                     y_count = 1;
+                    x_count = 1;
                 }
                 else
                 {
-                    tile_dims = convert_1d_to_2d(channels);
-                    y_count = tile_dims.Item2;
-                    x_count = tile_dims.Item1;
+                    channels = dict[keys[i]][0][0][0].Count;
+                    if (channels == 3)
+                    {
+                        x_count = 1; 
+                        y_count = 1;
+                    }
+                    else
+                    {
+                        tile_dims = convert_1d_to_2d(channels);
+                        y_count = tile_dims.Item2;
+                        x_count = tile_dims.Item1;
+                    }
                 }
+                    
 
                 current_dims = get_image_layer_dims(
                     y_count,
@@ -182,6 +200,11 @@ public class ModelCreator : MonoBehaviour
 
         //print($"{max_h} {max_w}");
 
+        bool first_flat = true; bool fake_layer = false; bool dense = false;
+        CubeScreen prev_dense = null; CubeScreen currentScreen;
+        List<Shape> shapes = new List<Shape>();
+        Shape shape;
+
         for (int i=0; i<layer_count; i++)
         {
             print(keys[i]);
@@ -193,7 +216,10 @@ public class ModelCreator : MonoBehaviour
                 y_offset = (max_h - 1f) / 2f;
                 x_offset = (max_w - (4f * height)) / 2f;
 
-                output = np.zeros(new Shape(new int[] {height}), typeof(float));
+                shape = new Shape(new int[] {height});
+                shapes.Add(shape);
+
+                output = np.zeros(shape, typeof(float));
                 for(int h=0; h<height; h++)
                 {
                     output[h] = (float)dict[keys[i]][0][h];
@@ -202,12 +228,15 @@ public class ModelCreator : MonoBehaviour
             }
             else if (dict[keys[i]][0][0].GetType() == typeof(JValue))
             {
-                //print(height);
+                dense = true;
+                
                 flatToRecDims = convert_1d_to_2d(height);
-                height = flatToRecDims.Item2; width = flatToRecDims.Item1; 
-                output = np.zeros(new Shape(new int[] {1, height, width, 1}), typeof(float));
+                height = flatToRecDims.Item2; width = flatToRecDims.Item1;
+                shape = new Shape(new int[] {1, height, width, 1});
+                shapes.Add(shape);
+                output = np.zeros(shape, typeof(float));
 
-                print($"{height} {width}");
+                //print($"{height} {width}");
 
                 y_offset = (max_h - height) / 2f;
                 x_offset = (max_w - width) / 2f;
@@ -233,7 +262,7 @@ public class ModelCreator : MonoBehaviour
                         /* current = (float)dict[keys[i]][0][(h * width) + w];
                         if (current > max)
                             max = current; */
-                        output[0,h,w,0] = (float)dict[keys[i]][0][idx] / max;
+                        output[0,h,width - 1 - w,0] = (float)dict[keys[i]][0][idx] / max;
                         idx++;
                     }
                 }
@@ -244,11 +273,17 @@ public class ModelCreator : MonoBehaviour
             }
             else
             {
-                channels = dict[keys[i]][0][0][0].Count;
-                width = dict[keys[i]][0][0].Count;
-                output = np.zeros(new Shape(new int[] {count, height, width, channels}), typeof(float));
+                if (dict[keys[i]][0][0][0].GetType() == typeof(JValue))
+                    channels = 1;
+                else
+                    channels = dict[keys[i]][0][0][0].Count;
 
-                if (channels == 3)
+                width = dict[keys[i]][0][0].Count;
+                shape = new Shape(new int[] {count, height, width, channels});
+                shapes.Add(shape);
+                output = np.zeros(shape, typeof(float));
+
+                if (channels == 3 || dict[keys[i]][0][0][0].GetType() == typeof(JValue))
                 {
                     x_count = 1; 
                     y_count = 1;
@@ -275,18 +310,37 @@ public class ModelCreator : MonoBehaviour
                  
                 max = 0f;
 
-                for(int b=0; b<count; b++)
+                if (dict[keys[i]][0][0][0].GetType() == typeof(JValue))
                 {
-                    for(int h=0; h<height; h++)
+                    for(int b=0; b<count; b++)
                     {
-                        for(int w=0; w<width; w++)
+                        for(int h=0; h<height; h++)
                         {
-                            for(int c=0; c<channels; c++)
+                            for(int w=0; w<width; w++)
                             {
-                                current = (float)dict[keys[i]][b][h][w][c];
-                                output[b,h,w,c] = current;
+                                current = (float)dict[keys[i]][b][h][w];
+                                output[b,h,width - 1 - w,0] = current;
                                 if (current > max)
                                     max = current;
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    for(int b=0; b<count; b++)
+                    {
+                        for(int h=0; h<height; h++)
+                        {
+                            for(int w=0; w<width; w++)
+                            {
+                                for(int c=0; c<channels; c++)
+                                {
+                                    current = (float)dict[keys[i]][b][h][w][c];
+                                    output[b,h,width - 1 - w,c] = current;
+                                    if (current > max)
+                                        max = current;
+                                }
                             }
                         }
                     }
@@ -315,16 +369,25 @@ public class ModelCreator : MonoBehaviour
                 new_layer.init_layer(origin, node_prefab);
 
                 origin.z += z_spacing;
+
+                if (dense)
+                {
+                    currentScreen = new_layer.GetScreens()[0];
+                    if (prev_dense != null)
+                        prev_dense.connect(currentScreen.getPoints());
+                    prev_dense = currentScreen;
+                }
+
                 origin.x -= x_offset;
                 origin.y -= y_offset;
             }
             else
             {
+                //string[] temp = new string[]{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"};//{"airplane", "automobile", "bird", "cat", "deer", "dog", "frog", "horse", "ship", "truck"};
                 List<string> labels = new List<string>();
-                for(int h=0; h<height; h++)
-                {
-                    labels.Add((string)dict["labels"][h]);
-                }
+                if (Settings.labels.Count > 0)
+                    labels = Settings.labels;
+                
 
                 origin.z -= .25f * z_spacing;
                 origin.x += x_offset;
@@ -334,9 +397,17 @@ public class ModelCreator : MonoBehaviour
                 new_layer.SetImages(output);
                 new_layer.setLabels(labels, label_prefab);
                 new_layer.init_layer(origin, output_node_prefab);
+
+                List<Vector3> finalPoints = new_layer.GetPoints();
+                prev_dense.connect(finalPoints);
+
             }
 
+            layers.Add(new_layer);
+
         }
+
+        print(layers.Count == shapes.Count);
 
         RotateCamera cam_rotation = main_cam.GetComponent<RotateCamera>();
         origin.x = max_w / 2;
@@ -346,5 +417,270 @@ public class ModelCreator : MonoBehaviour
 
         Vector3 cam_pivot = new Vector3(origin.x, origin.y, origin.z * .48f);
         cam_rotation.start_rotation(cam_pivot, origin);
+
+        if (fCount > 1)
+        {
+            for(int json_idx=1; json_idx < fCount; json_idx++)
+            {
+                dict = JsonConvert.DeserializeObject<Dictionary<string, dynamic>>(File.ReadAllText($"{json_path}activations{json_idx}.json"));
+
+                for (int i=0; i < layer_count; i++)
+                {
+                    /*print("test1");
+                    if (shapes[i].NDim == 1)
+                    {
+                        height = shapes[i][0];
+                        output = np.zeros(shapes[i], typeof(float));
+                        for(int h=0; h<height; h++)
+                        {
+                            output[h] = (float)dict[keys[i]][0][h];
+                        }
+                        
+                    }
+                    else
+                    {
+                        count = shapes[i][0];
+                        height = shapes[i][1];
+                        width = shapes[i][2];
+                        channels = shapes[i][3];
+
+                        dense = dict[keys[i]][0][0].GetType() == typeof(JValue);
+
+                        
+
+                        max = 0f;
+
+                        print("test2");
+
+                        if (dense)
+                        {
+                            output = np.zeros(shapes[i], typeof(float));
+
+                            print("test3dense");
+                            int idx = 0;
+                            for(int h=0; h<height; h++)
+                            {
+                                for(int w=0; w<width; w++)
+                                {
+                                    current = (float)dict[keys[i]][0][idx];
+                                    if (current > max)
+                                        max = current;
+                                    output[0,h,width - 1 - w,0] = current;
+                                    idx++;
+                                }
+                            }
+
+                            output = output / max;
+                            print("test4dense");
+                        }
+                        else
+                        {
+                            if (dict[keys[i]][0][0][0].GetType() == typeof(JValue))
+                                channels = 1;
+                            else
+                                channels = dict[keys[i]][0][0][0].Count;
+                            
+                            output = np.zeros(shapes[i], typeof(float));
+                            
+                            multi_output = channels == 3;
+                            
+
+                            if (dict[keys[i]][0][0][0].GetType() == typeof(JValue))
+                            {
+                                for(int b=0; b<count; b++)
+                                {
+                                    for(int h=0; h<height; h++)
+                                    {
+                                        for(int w=0; w<width; w++)
+                                        {
+                                            current = (float)dict[keys[i]][b][h][w];
+                                            output[b,h,width - 1 - w,0] = current;
+                                            if (current > max)
+                                                max = current;
+                                        }
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                for(int b=0; b<count; b++)
+                                {
+                                    for(int h=0; h<height; h++)
+                                    {
+                                        for(int w=0; w<width; w++)
+                                        {
+                                            for(int c=0; c<channels; c++)
+                                            {
+                                                current = (float)dict[keys[i]][b][h][w][c];
+                                                output[b,h,width - 1 - w,c] = current;
+                                                if (current > max)
+                                                    max = current;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            output = output / max;
+                        }
+
+                        if (multi_output)
+                            output = output.swapaxes(0, 3);
+                        
+                        multi_output = false;
+                    }*/
+
+                    print(keys[i]);
+                    count = dict[keys[i]].Count;
+                    height = dict[keys[i]][0].Count;
+
+                    if (i == layer_count - 1)
+                    {
+                        y_offset = (max_h - 1f) / 2f;
+                        x_offset = (max_w - (4f * height)) / 2f;
+
+                        shape = new Shape(new int[] {height});
+                        shapes.Add(shape);
+
+                        output = np.zeros(shape, typeof(float));
+                        for(int h=0; h<height; h++)
+                        {
+                            output[h] = (float)dict[keys[i]][0][h];
+                        }
+
+                    }
+                    else if (dict[keys[i]][0][0].GetType() == typeof(JValue))
+                    {
+                        dense = true;
+                        
+                        flatToRecDims = convert_1d_to_2d(height);
+                        height = flatToRecDims.Item2; width = flatToRecDims.Item1;
+                        shape = new Shape(new int[] {1, height, width, 1});
+                        shapes.Add(shape);
+                        output = np.zeros(shape, typeof(float));
+
+                        //print($"{height} {width}");
+
+                        y_offset = (max_h - height) / 2f;
+                        x_offset = (max_w - width) / 2f;
+
+                        max = 0f;
+                        
+
+                        foreach (JValue val in dict[keys[i]][0])
+                        {
+                            current = (float)val;
+                            if (current > max)
+                                max = current;
+                        }
+
+                        if (i == 0)
+                            max = 1f;
+
+                        int idx = 0;
+                        for(int h=0; h<height; h++)
+                        {
+                            for(int w=0; w<width; w++)
+                            {
+                                /* current = (float)dict[keys[i]][0][(h * width) + w];
+                                if (current > max)
+                                    max = current; */
+                                output[0,h,width - 1 - w,0] = (float)dict[keys[i]][0][idx] / max;
+                                idx++;
+                            }
+                        }
+
+                        //output = output * (1/max);
+
+                        //multi_output = true;
+                    }
+                    else
+                    {
+                        if (dict[keys[i]][0][0][0].GetType() == typeof(JValue))
+                            channels = 1;
+                        else
+                            channels = dict[keys[i]][0][0][0].Count;
+
+                        width = dict[keys[i]][0][0].Count;
+                        shape = new Shape(new int[] {count, height, width, channels});
+                        shapes.Add(shape);
+                        output = np.zeros(shape, typeof(float));
+
+                        if (channels == 3 || dict[keys[i]][0][0][0].GetType() == typeof(JValue))
+                        {
+                            x_count = 1; 
+                            y_count = 1;
+                        }
+                        else
+                        {
+                            tile_dims = convert_1d_to_2d(channels);
+                            y_count = tile_dims.Item2;
+                            x_count = tile_dims.Item1;
+                            //print($"{tile_dims.Item1} {tile_dims.Item2}");
+                        }
+
+                        current_dims = get_image_layer_dims(y_count, x_count, height, width);
+
+                        //print($"{current_dims.Item1} {current_dims.Item2}");
+                        y_offset = (max_h - current_dims.Item1) / 2f;
+                        x_offset = (max_w - current_dims.Item2) / 2f;
+
+                        
+                        //print($"batch: {count}, height: {height}, width: {width}, channels: {channels}");
+
+                        multi_output = channels > 3;
+
+                        
+                        max = 0f;
+
+                        if (dict[keys[i]][0][0][0].GetType() == typeof(JValue))
+                        {
+                            for(int b=0; b<count; b++)
+                            {
+                                for(int h=0; h<height; h++)
+                                {
+                                    for(int w=0; w<width; w++)
+                                    {
+                                        current = (float)dict[keys[i]][b][h][w];
+                                        output[b,h,width - 1 - w,0] = current;
+                                        if (current > max)
+                                            max = current;
+                                    }
+                                }
+                            }
+                        }
+                        else
+                        {
+                            for(int b=0; b<count; b++)
+                            {
+                                for(int h=0; h<height; h++)
+                                {
+                                    for(int w=0; w<width; w++)
+                                    {
+                                        for(int c=0; c<channels; c++)
+                                        {
+                                            current = (float)dict[keys[i]][b][h][w][c];
+                                            output[b,h,width - 1 - w,c] = current;
+                                            if (current > max)
+                                                max = current;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        if (i > 0)
+                            output = output / max; 
+                    }
+
+                    if (multi_output)
+                        output = output.swapaxes(0, 3);
+                    
+                    multi_output = false;
+
+                    layers[i].addColors(output);                  
+
+                }
+            }
+        }
     }
 }
