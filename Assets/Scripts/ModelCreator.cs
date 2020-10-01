@@ -575,12 +575,20 @@ public class ModelCreator : MonoBehaviour
 
                     layers[i].addColors(output);
 
-                    if (dense && i < layer_count - 1)
+                    if (dense)
                     {
-                        currentScreen = layers[i].GetScreens()[0];
-                        if (prev_dense != null)
-                            prev_dense.connect(currentScreen.getPoints());
-                        prev_dense = currentScreen;
+                        if (i < layer_count - 1)
+                        {
+                            currentScreen = layers[i].GetScreens()[0];
+                            if (prev_dense != null)
+                                prev_dense.connect(currentScreen.getPoints());
+                            prev_dense = currentScreen;
+                        }
+                        else
+                        {
+                            if (prev_dense != null)
+                                prev_dense.connect(layers[i].GetPoints());
+                        }
                     }                
 
                 }

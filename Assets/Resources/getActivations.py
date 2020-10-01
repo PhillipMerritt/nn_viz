@@ -22,6 +22,9 @@ def start(model_path, input_path):
         os.remove("Assets/Resources/activations/{}".format(fn))
 
     filenames = os.listdir(input_path)
+
+    filenames = sorted(filenames)
+
     for i, fn in enumerate(filenames):
         img = np.array([imageio.imread("{}/{}".format(input_path, fn))])
 

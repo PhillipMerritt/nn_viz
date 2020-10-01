@@ -127,7 +127,7 @@ public class CubeScreen {
 
 		add_chunk();
 		CreateMesh();
-		chunks[chunks.Count - 1].SetActive(false);
+		chunks[chunks.Count - 1].GetComponent<Renderer>().enabled = false;
 	}
 	
 	public float checkColors()
@@ -325,24 +325,22 @@ public class CubeScreen {
 
 		if (lines.Count > 1)
 		{
-			if (lines.Count != chunks.Count)
-				throw new ArgumentException("line and chunk count mismatch", $"{lines.Count} lines and {chunks.Count} chunks");
-			lines[color_idx].SetActive(false);
-			chunks[color_idx].SetActive(false);
+			/* if (lines.Count != chunks.Count)
+				throw new ArgumentException("line and chunk count mismatch", $"{lines.Count} lines and {chunks.Count} chunks"); */
+			lines[(color_idx + 1) % chunks.Count].GetComponent<Renderer>().enabled = true;//.SetActive(true);
+			chunks[(color_idx + 1) % chunks.Count].GetComponent<Renderer>().enabled = true;//.SetActive(true);
+			lines[color_idx  % chunks.Count].GetComponent<Renderer>().enabled = false;//.SetActive(false);
+			chunks[color_idx  % chunks.Count].GetComponent<Renderer>().enabled = false;//.SetActive(false);
+			color_idx++;
 
-			color_idx = (color_idx + 1) % chunks.Count;
-
-			//color_idx = (color_idx + 1) % chunks.Count;
-			lines[color_idx].SetActive(true);
-			chunks[color_idx].SetActive(true);
+			//color_idx = ((color_idx + 1) % chunks.Count) % chunks.Count;
 		}
 		else
 		{
-			chunks[color_idx].SetActive(false);
+			chunks[(color_idx + 1) % chunks.Count].GetComponent<Renderer>().enabled = true;//.SetActive(true);
+			chunks[color_idx  % chunks.Count].GetComponent<Renderer>().enabled = false;//.SetActive(false);
 			
-			color_idx = (color_idx + 1) % chunks.Count;
-
-			chunks[color_idx].SetActive(true);
+			color_idx++;
 		}
 	}
 
@@ -461,6 +459,7 @@ public class CubeScreen {
 		//mesh.RecalculateNormals ();
 
 		lineMeshFilter.mesh = mesh;
+		lineMeshRenderer.enabled = false;
 
 	}
 

@@ -147,11 +147,6 @@ public class ImageLayer : Layer
         return;
     }
 
-    public void connect(ImageLayer layer)
-    {
-        screens[0].connect(layer.screens[0].getPoints());
-    }
-
     public override List<Vector3> GetPoints()
     {
         throw new NotImplementedException();
