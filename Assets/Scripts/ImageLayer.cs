@@ -11,6 +11,7 @@ public class ImageLayer : Layer
 {
     new public List<CubeScreen> screens;
     int image_count;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -20,7 +21,7 @@ public class ImageLayer : Layer
     // Update is called once per frame
     void Update()
     {
-        if (Time.fixedTime % Settings.timing == 0)
+        if (looping && Time.fixedTime % Settings.timing == 0)
         {
             foreach (CubeScreen screen in screens)
             {
@@ -94,18 +95,11 @@ public class ImageLayer : Layer
     public override void addColors(NDArray new_colors)
     {
         int idx = 0;
-        print("````````````");
-        print(h);
-        print(w);
-        foreach (int dim in new_colors.shape)
-            print(dim);
-        print("````````````");
         for(float y=0f; y < h; y++)
         {
             for(float x=0f; x < w; x++)
             {
                 screens[idx].addImage(new_colors[(int)(y * w + x)]);
-                print(screens[idx].checkColors());
                 idx++;
             }
         }

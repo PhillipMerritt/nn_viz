@@ -407,8 +407,6 @@ public class ModelCreator : MonoBehaviour
 
         }
 
-        print(layers.Count == shapes.Count);
-
         RotateCamera cam_rotation = main_cam.GetComponent<RotateCamera>();
         origin.x = max_w / 2;
         origin.y = 4f + max_h / 2;
@@ -423,111 +421,11 @@ public class ModelCreator : MonoBehaviour
             for(int json_idx=1; json_idx < fCount; json_idx++)
             {
                 dict = JsonConvert.DeserializeObject<Dictionary<string, dynamic>>(File.ReadAllText($"{json_path}activations{json_idx}.json"));
+                prev_dense = null;
 
                 for (int i=0; i < layer_count; i++)
                 {
-                    /*print("test1");
-                    if (shapes[i].NDim == 1)
-                    {
-                        height = shapes[i][0];
-                        output = np.zeros(shapes[i], typeof(float));
-                        for(int h=0; h<height; h++)
-                        {
-                            output[h] = (float)dict[keys[i]][0][h];
-                        }
-                        
-                    }
-                    else
-                    {
-                        count = shapes[i][0];
-                        height = shapes[i][1];
-                        width = shapes[i][2];
-                        channels = shapes[i][3];
-
-                        dense = dict[keys[i]][0][0].GetType() == typeof(JValue);
-
-                        
-
-                        max = 0f;
-
-                        print("test2");
-
-                        if (dense)
-                        {
-                            output = np.zeros(shapes[i], typeof(float));
-
-                            print("test3dense");
-                            int idx = 0;
-                            for(int h=0; h<height; h++)
-                            {
-                                for(int w=0; w<width; w++)
-                                {
-                                    current = (float)dict[keys[i]][0][idx];
-                                    if (current > max)
-                                        max = current;
-                                    output[0,h,width - 1 - w,0] = current;
-                                    idx++;
-                                }
-                            }
-
-                            output = output / max;
-                            print("test4dense");
-                        }
-                        else
-                        {
-                            if (dict[keys[i]][0][0][0].GetType() == typeof(JValue))
-                                channels = 1;
-                            else
-                                channels = dict[keys[i]][0][0][0].Count;
-                            
-                            output = np.zeros(shapes[i], typeof(float));
-                            
-                            multi_output = channels == 3;
-                            
-
-                            if (dict[keys[i]][0][0][0].GetType() == typeof(JValue))
-                            {
-                                for(int b=0; b<count; b++)
-                                {
-                                    for(int h=0; h<height; h++)
-                                    {
-                                        for(int w=0; w<width; w++)
-                                        {
-                                            current = (float)dict[keys[i]][b][h][w];
-                                            output[b,h,width - 1 - w,0] = current;
-                                            if (current > max)
-                                                max = current;
-                                        }
-                                    }
-                                }
-                            }
-                            else
-                            {
-                                for(int b=0; b<count; b++)
-                                {
-                                    for(int h=0; h<height; h++)
-                                    {
-                                        for(int w=0; w<width; w++)
-                                        {
-                                            for(int c=0; c<channels; c++)
-                                            {
-                                                current = (float)dict[keys[i]][b][h][w][c];
-                                                output[b,h,width - 1 - w,c] = current;
-                                                if (current > max)
-                                                    max = current;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                            output = output / max;
-                        }
-
-                        if (multi_output)
-                            output = output.swapaxes(0, 3);
-                        
-                        multi_output = false;
-                    }*/
+                    dense = dict[keys[i]][0][0].GetType() == typeof(JValue);
 
                     print(keys[i]);
                     count = dict[keys[i]].Count;
@@ -548,10 +446,8 @@ public class ModelCreator : MonoBehaviour
                         }
 
                     }
-                    else if (dict[keys[i]][0][0].GetType() == typeof(JValue))
-                    {
-                        dense = true;
-                        
+                    else if (dense)
+                    {   
                         flatToRecDims = convert_1d_to_2d(height);
                         height = flatToRecDims.Item2; width = flatToRecDims.Item1;
                         shape = new Shape(new int[] {1, height, width, 1});
@@ -677,10 +573,23 @@ public class ModelCreator : MonoBehaviour
                     
                     multi_output = false;
 
-                    layers[i].addColors(output);                  
+                    layers[i].addColors(output);
+
+                    if (dense && i < layer_count - 1)
+                    {
+                        currentScreen = layers[i].GetScreens()[0];
+                        if (prev_dense != null)
+                            prev_dense.connect(currentScreen.getPoints());
+                        prev_dense = currentScreen;
+                    }                
 
                 }
             }
+        }
+
+        for(int i=0; i<layer_count; i++)
+        {
+            layers[i].startLooping();
         }
     }
 }

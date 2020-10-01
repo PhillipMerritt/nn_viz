@@ -27,13 +27,12 @@ public class OutputLayer : Layer
     // Update is called once per frame
     void Update()
     {
-        if (Time.fixedTime % Settings.timing == 0)
+        if (looping && Time.fixedTime % Settings.timing == 0)
         {
             //print("OutputLayer clock test");
             nextColors();
         }
     }
-
     public override void SetImages(NDArray image_arr)
     {
         images = image_arr;

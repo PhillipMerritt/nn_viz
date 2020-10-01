@@ -14,8 +14,9 @@ public class CubeScreen {
 
 	public int ChunkWidth;
 	public int ChunkHeight;
+	public Vector3 origin;
 
-	public GameObject chunk;
+	public List<GameObject> chunks;
 
 	int vertexIndex = 0;
 	List<Vector3> vertices = new List<Vector3> ();
@@ -45,31 +46,38 @@ public class CubeScreen {
 
 	public CubeScreen()
 	{
+		lines = new List<GameObject>();
 		points = new List<Vector3>();
 		weights = new List<float>();
 		baseLineColor = new Color(0.5f, 0.5f, 0.5f, 1f);
 	}
 
-	public void init_screen(Vector3 origin, GameObject prefab, int h, int w)
+	public void init_screen(Vector3 originIn, GameObject prefab, int h, int w)
     {
+		origin = originIn;
         ChunkWidth = w;
 		ChunkHeight = h;
 		voxelMap = new byte[ChunkWidth, ChunkHeight, 1];
 
-        chunk = new GameObject();
-        chunk.transform.position = origin;//new Vector3(origin.x + ChunkWidth, origin.y, origin.z + 1);
-		meshFilter = chunk.AddComponent<MeshFilter>();
-		meshRenderer = chunk.AddComponent<MeshRenderer>();
-		meshRenderer.material = new Material(Shader.Find("Particles/Standard Unlit"));
-
-		//PopulateVoxelMap ();
+		chunks = new List<GameObject>();
+        
+		add_chunk();
 		CreateMeshData ();
 		CreateMesh ();
 	}
 
+	private void add_chunk()
+	{
+		chunks.Add(new GameObject());
+        chunks[chunks.Count - 1].transform.position = origin;
+		meshFilter = chunks[chunks.Count - 1].AddComponent<MeshFilter>();
+		meshRenderer = chunks[chunks.Count - 1].AddComponent<MeshRenderer>();
+		meshRenderer.material = new Material(Shader.Find("Particles/Standard Unlit"));
+	}
+
     Vector3 position {
 
-        get { return chunk.transform.position; }
+        get { return origin; }
 
     }
 
@@ -103,20 +111,23 @@ public class CubeScreen {
 		newColors.Reverse();
 		colorSet.Add(newColors.ToArray());
 
-		if (lineColorSet.Count > 0)
+		/* if (lineColorSet.Count > 0)
 		{
 			newColors = new List<Color>();
 
 			foreach (Tuple<int, int> xy in includedLines)
 			{
 				baseLineColor.a = image_in[xy.Item2, xy.Item1, 0];
-				//baseLineColor = new Color(0.5f, 0.5f, 0.5f, image_in[xy.Item2, xy.Item1, 0]);
 				newColors.Add(baseLineColor); newColors.Add(baseLineColor);
 
 			}
 
 			lineColorSet.Add(newColors.ToArray());
-		}
+		} */
+
+		add_chunk();
+		CreateMesh();
+		chunks[chunks.Count - 1].SetActive(false);
 	}
 	
 	public float checkColors()
@@ -295,30 +306,44 @@ public class CubeScreen {
 		mesh.vertices = vertices.ToArray ();
 		mesh.triangles = triangles.ToArray ();
         //colors.Reverse();
-		mesh.colors = colors.ToArray ();
+		mesh.colors = colorSet[colorSet.Count - 1];
 
 		//mesh.RecalculateBounds ();
 		mesh.RecalculateNormals ();
 
-		meshFilter.mesh = mesh;
+		chunks[chunks.Count - 1].GetComponent<MeshFilter>().mesh = mesh;
 
 	}
 
-	public int nextColors()
+	public void nextColors()
 	{
-		if (colorSet.Count == 1)
-			return 0;
+		if (chunks.Count == 1)
+			return;
 
-		meshFilter.mesh.SetColors(colorSet[color_idx]);
+		//meshFilter.mesh.SetColors(colorSet[color_idx]);
+		
 
-		if (lineColorSet.Count > 1)
+		if (lines.Count > 1)
 		{
-			lineMeshFilter.mesh.colors = lineColorSet[color_idx];
+			if (lines.Count != chunks.Count)
+				throw new ArgumentException("line and chunk count mismatch", $"{lines.Count} lines and {chunks.Count} chunks");
+			lines[color_idx].SetActive(false);
+			chunks[color_idx].SetActive(false);
+
+			color_idx = (color_idx + 1) % chunks.Count;
+
+			//color_idx = (color_idx + 1) % chunks.Count;
+			lines[color_idx].SetActive(true);
+			chunks[color_idx].SetActive(true);
 		}
-		
-		color_idx = (color_idx + 1) % colorSet.Count;
-		
-		return color_idx;
+		else
+		{
+			chunks[color_idx].SetActive(false);
+			
+			color_idx = (color_idx + 1) % chunks.Count;
+
+			chunks[color_idx].SetActive(true);
+		}
 	}
 
 	private int[] sample_points(int n, int sample_size)
@@ -359,7 +384,7 @@ public class CubeScreen {
 		else
 			downscale = .01f;
 
-		includedLines = new List<Tuple<int, int>>();
+		//includedLines = new List<Tuple<int, int>>();
 		if (conCount > 3000)
 		{
 			int sample_size = (int)(downscale * conCount);
@@ -371,7 +396,7 @@ public class CubeScreen {
 				pointIdx = (int)Math.Floor((double)idx / endPoints.Count);	
 				connections.Add(new Tuple<Tuple<Vector3, Vector3>, float>(new Tuple<Vector3, Vector3>(points[pointIdx], endPoints[idx % endPoints.Count]), weights[pointIdx]));
 
-				includedLines.Add(new Tuple<int, int>(pointIdx % ChunkWidth, (int)(pointIdx / ChunkWidth)));
+				//includedLines.Add(new Tuple<int, int>(pointIdx % ChunkWidth, (int)(pointIdx / ChunkWidth)));
 			}
 		}
 		else
@@ -384,10 +409,10 @@ public class CubeScreen {
 				i++;
 			}
 
-			for(int y=0; y<ChunkHeight; y++)
+			/* for(int y=0; y<ChunkHeight; y++)
 				for(int x=0; x<ChunkWidth; x++)
 					for(int z=0; z<endPoints.Count; z++)
-						includedLines.Add(new Tuple<int, int>(x, y));
+						includedLines.Add(new Tuple<int, int>(x, y)); */
 		}
 
 		/* foreach (Tuple<Tuple<Vector3, Vector3>, float> tup in connections)
@@ -398,9 +423,9 @@ public class CubeScreen {
 
 	private void drawLines(List<Tuple<Tuple<Vector3, Vector3>, float>> connections)
 	{
-		GameObject lines = new GameObject();
-		lineMeshFilter = lines.AddComponent<MeshFilter>();
-		lineMeshRenderer = lines.AddComponent<MeshRenderer>();
+		lines.Add(new GameObject());
+		lineMeshFilter = lines[lines.Count - 1].AddComponent<MeshFilter>();
+		lineMeshRenderer = lines[lines.Count - 1].AddComponent<MeshRenderer>();
 		lineMeshRenderer.material = Resources.Load("Materials/ConnectionMaterial", typeof(Material)) as Material;//new Material(Shader.Find("Particles/Standard Unlit"));
 
 		vertexIndex = 0;
@@ -418,9 +443,6 @@ public class CubeScreen {
 			lineColors.Add(baseLineColor); lineColors.Add(baseLineColor);
 		}
 
-		if (verts.Count != includedLines.Count * 2)
-			throw new System.ArgumentException("vertex and included line count mismatch", $"{verts.Count} vertices and {includedLines.Count} lines");
-
 		Mesh mesh = new Mesh();
 
 		mesh.MarkDynamic();
@@ -433,7 +455,7 @@ public class CubeScreen {
         //colors.Reverse();
 		lineColorSet.Add(lineColors.ToArray());
 
-		mesh.colors = lineColorSet[0];
+		mesh.colors = lineColorSet[lineColorSet.Count - 1];
 
 		//mesh.RecalculateBounds ();
 		//mesh.RecalculateNormals ();

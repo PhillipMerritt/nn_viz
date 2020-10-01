@@ -14,6 +14,7 @@ public abstract class Layer : MonoBehaviour
     public int h;
     public int w;
     public NDArray images;
+    public bool looping = false;
 
     // Start is called before the first frame update
     void Start()
@@ -43,4 +44,9 @@ public abstract class Layer : MonoBehaviour
     abstract public List<CubeScreen> GetScreens();
 
     abstract public List<Vector3> GetPoints();
+
+    public virtual void startLooping()
+    {
+        looping = true;
+    }
 }
