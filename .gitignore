@@ -79,3 +79,4 @@ env/
 inputs/
 activations/
 Plugins/
+pythonVenv/

@@ -21,7 +21,7 @@ public class ImageLayer : Layer
     // Update is called once per frame
     void Update()
     {
-        if (looping && Time.fixedTime % Settings.timing == 0)
+        if (Settings.looping && Time.fixedTime % Settings.timing == 0)
         {
             foreach (CubeScreen screen in screens)
             {

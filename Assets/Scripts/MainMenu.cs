@@ -67,7 +67,10 @@ public class MainMenu : MonoBehaviour
         //sideChannel.SendPathsToPython(modelPath, inputPath);
 
         print($"{GetProjectPath()}/Assets/Resources/getActivations.py");
-        print($"{GetProjectPath()}/python-envs/env/Scripts/python.exe");
+        //Assets/Packages/PythonVenv/Runtime/env/Scripts/python.exe
+        //print($"{GetProjectPath()}/python-envs/env/Scripts/python.exe");
+        print("Assets/Packages/PythonVenv/Runtime/env/Scripts/python.exe");
+
 
         run_cmd($"{GetProjectPath()}/Assets/Resources/getActivations.py", $"{modelPath} {inputPath}");
         print("Sent paths");

@@ -9,6 +9,7 @@ public static class Settings
     public static List<string> labels;
 
     public static int timing;
+    public static bool looping = false;
 
     public static void setSettings(List<int> newShape, bool newNorm, List<string> newLabels)
     {
@@ -16,5 +17,10 @@ public static class Settings
         normalize = newNorm;
         labels = newLabels;
         timing = 3;
+    }
+
+    public static void startLooping()
+    {
+        looping = true;
     }
 }

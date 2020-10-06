@@ -595,9 +595,10 @@ public class ModelCreator : MonoBehaviour
             }
         }
 
-        for(int i=0; i<layer_count; i++)
+        Settings.startLooping();
+        /* for(int i=0; i<layer_count; i++)
         {
             layers[i].startLooping();
-        }
+        } */
     }
 }

@@ -222,6 +222,15 @@ MonoBehaviour:
   output_pos: {x: 0, y: 0, z: 0}
   rotating: 0
   speedMod: 10
+--- !u!45 &855314971
+Skybox:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 855314968}
+  m_Enabled: 1
+  m_CustomSkybox: {fileID: 2100000, guid: 8401881fcb9afd34eb383fc90bbbbddc, type: 2}
 --- !u!1001 &865125107
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -239,15 +248,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8209728004508575506, guid: f4bdec741ddfce58cb75ae315a856671, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 2.06
+      value: 106.8
       objectReference: {fileID: 0}
     - target: {fileID: 8209728004508575506, guid: f4bdec741ddfce58cb75ae315a856671, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 23.6
+      value: 273.3
       objectReference: {fileID: 0}
     - target: {fileID: 8209728004508575506, guid: f4bdec741ddfce58cb75ae315a856671, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -0.48
+      value: -182
       objectReference: {fileID: 0}
     - target: {fileID: 8209728004508575506, guid: f4bdec741ddfce58cb75ae315a856671, type: 3}
       propertyPath: m_LocalRotation.x
@@ -395,19 +404,19 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6007689811566972509, guid: 6f0ae1caed931263e8af4e5e10bed598, type: 3}
       propertyPath: m_ClearFlags
-      value: 2
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6007689811566972509, guid: 6f0ae1caed931263e8af4e5e10bed598, type: 3}
       propertyPath: m_BackGroundColor.r
-      value: 0.11213954
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6007689811566972509, guid: 6f0ae1caed931263e8af4e5e10bed598, type: 3}
       propertyPath: m_BackGroundColor.g
-      value: 0.17125507
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6007689811566972509, guid: 6f0ae1caed931263e8af4e5e10bed598, type: 3}
       propertyPath: m_BackGroundColor.b
-      value: 0.26415092
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6007689811566972511, guid: 6f0ae1caed931263e8af4e5e10bed598, type: 3}
       propertyPath: m_Name
@@ -453,6 +462,7 @@ MonoBehaviour:
   output_node_prefab: {fileID: 7153757283796035722, guid: 8893df9a5bddab34e9954923390c1aa5, type: 3}
   label_prefab: {fileID: 6642043952589236376, guid: f9dcbc8ae07082a4795b490788b25080, type: 3}
   main_cam: {fileID: 0}
+  cam_xform: {fileID: 0}
 --- !u!4 &1842995195
 Transform:
   m_ObjectHideFlags: 0
